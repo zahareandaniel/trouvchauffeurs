@@ -139,6 +139,13 @@
               <textarea id="message" name="message" placeholder="Please include pickup location, destination, date, time and number of passengers." required></textarea>
             </div>
 
+            <div class="contact-form-honeypot" aria-hidden="true">
+              <label for="contact-company">Company website</label>
+              <input type="text" id="contact-company" name="company" autocomplete="off" tabindex="-1">
+            </div>
+
+            <p id="contact-form-status" class="contact-form-status" role="status" aria-live="polite"></p>
+
             <button type="submit" class="btn btn--primary" style="width: 100%;">Request a Quote</button>
           </form>
         </div>

@@ -1153,6 +1153,30 @@ section {
   gap: 24px;
 }
 
+.contact-form-honeypot {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.contact-form-status {
+  min-height: 1.25em;
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: var(--grey-600);
+}
+
+.contact-form-status.is-error {
+  color: #b00020;
+}
+
+.contact-form-status.is-success {
+  color: #2e7d32;
+}
+
 /* ---------- Footer ---------- */
 .site-footer {
   background-color: var(--off-black);
