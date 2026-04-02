@@ -1227,6 +1227,32 @@ section {
   opacity: 1;
 }
 
+.footer-social {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.footer-social__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey-400);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.footer-social__link:hover {
+  color: var(--white);
+  transform: translateY(-1px);
+}
+
+.footer-social__link svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 .footer-bottom {
   display: flex;
   align-items: center;
