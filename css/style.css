@@ -635,10 +635,12 @@ section {
 .service-card .card-link {
   display: inline-block;
   margin-top: 1.5rem;
-  font-size: 0.75rem;
+  max-width: 100%;
+  font-size: 0.82rem;
   font-weight: var(--fw-medium);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  line-height: 1.45;
   color: var(--black);
   border-bottom: 1px solid var(--black);
   padding-bottom: 2px;
@@ -1769,10 +1771,11 @@ section {
 }
 
 .blog-card__link {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: var(--fw-medium);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  line-height: 1.45;
   color: var(--black);
   border-bottom: 1px solid var(--black);
   padding-bottom: 2px;
