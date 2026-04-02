@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://trouv.co.uk/sitemap.xml
+Sitemap: https://www.trouv.co.uk/sitemap.xml
