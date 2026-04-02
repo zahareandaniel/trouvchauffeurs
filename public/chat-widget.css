@@ -38,6 +38,36 @@
   outline: none;
 }
 
+.trouv-whatsapp-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 96px;
+  z-index: 9997;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25d366;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+
+.trouv-whatsapp-fab:hover {
+  transform: scale(1.07);
+  box-shadow: 0 6px 28px rgba(37, 211, 102, 0.5);
+}
+
+.trouv-whatsapp-fab svg {
+  width: 26px;
+  height: 26px;
+  fill: #0e0e0e;
+}
+
 .trouv-chat-bubble:hover {
   transform: scale(1.07);
   box-shadow: 0 6px 28px rgba(201, 169, 110, 0.6);
@@ -111,6 +141,36 @@
   padding: 16px 18px;
   background: var(--chat-surface);
   border-bottom: 1px solid var(--chat-border);
+  flex-shrink: 0;
+}
+
+.trouv-chat-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 169, 110, 0.35);
+  color: var(--chat-accent);
+  text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.trouv-chat-whatsapp:hover {
+  background: rgba(201, 169, 110, 0.1);
+  border-color: var(--chat-accent);
+  transform: translateY(-1px);
+}
+
+.trouv-chat-whatsapp:active { transform: translateY(0); }
+
+.trouv-chat-whatsapp svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--chat-accent);
   flex-shrink: 0;
 }
 
@@ -336,4 +396,11 @@
     bottom: 20px;
     right: 20px;
   }
+
+  .trouv-whatsapp-fab {
+    bottom: 20px;
+    right: 88px;
+  }
+
+  .trouv-chat-whatsapp span { display: none; }
 }

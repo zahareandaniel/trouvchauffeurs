@@ -6,7 +6,10 @@
 
   // ── Config ──────────────────────────────────────────────
   const API_ENDPOINT = '/api/chat';
-  const WELCOME_MSG  = "Good day. I'm the Trouv concierge — how can I help you today?";
+  const WELCOME_MSG  = "Good day. I'm the Trouv concierge. How can I help you today?";
+  const WHATSAPP_NUMBER_INTL = '447494528909';
+  const WHATSAPP_PREFILL = 'Hello Trouv, I would like to enquire about a chauffeur booking.';
+  const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER_INTL}?text=${encodeURIComponent(WHATSAPP_PREFILL)}`;
   const QUICK_REPLIES = [
     'Airport transfers',
     'Corporate travel',
@@ -33,6 +36,21 @@
       <span class="trouv-chat-badge"></span>
     `);
 
+    // WhatsApp button (always visible on site)
+    const whatsapp = el('a', {
+      class: 'trouv-whatsapp-fab',
+      href: WHATSAPP_URL,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      'aria-label': 'WhatsApp Trouv',
+      title: 'WhatsApp Trouv',
+    }, `
+      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M19.11 17.19c-.28-.14-1.64-.81-1.9-.9-.26-.09-.45-.14-.64.14-.19.28-.73.9-.9 1.09-.16.19-.33.21-.61.07-.28-.14-1.18-.43-2.25-1.39-.83-.74-1.39-1.66-1.55-1.94-.16-.28-.02-.43.12-.57.13-.13.28-.33.42-.49.14-.16.19-.28.28-.47.09-.19.05-.35-.02-.49-.07-.14-.64-1.54-.88-2.11-.23-.56-.47-.48-.64-.49h-.55c-.19 0-.49.07-.75.35-.26.28-.98.96-.98 2.35 0 1.39 1.01 2.74 1.15 2.93.14.19 1.98 3.03 4.79 4.25.67.29 1.19.46 1.6.59.67.21 1.28.18 1.76.11.54-.08 1.64-.67 1.87-1.31.23-.64.23-1.19.16-1.31-.07-.12-.26-.19-.54-.33z"/>
+        <path d="M16.02 3.2c-7.04 0-12.76 5.72-12.76 12.76 0 2.25.59 4.38 1.7 6.26L3.2 28.8l6.72-1.76c1.81.99 3.89 1.51 6.1 1.51 7.04 0 12.76-5.72 12.76-12.76S23.06 3.2 16.02 3.2zm0 22.97c-2.03 0-3.91-.58-5.52-1.58l-.4-.24-3.99 1.05 1.06-3.89-.26-.41c-1.07-1.67-1.64-3.61-1.64-5.6 0-5.8 4.72-10.52 10.52-10.52s10.52 4.72 10.52 10.52-4.72 10.52-10.52 10.52z"/>
+      </svg>
+    `);
+
     // Panel
     const panel = el('div', { class: 'trouv-chat-panel', role: 'dialog', 'aria-label': 'Trouv concierge chat' }, `
       <div class="trouv-chat-header">
@@ -41,6 +59,13 @@
           <div class="trouv-chat-header-name">Trouv Concierge</div>
           <div class="trouv-chat-header-status">Online</div>
         </div>
+        <a class="trouv-chat-whatsapp" href="${WHATSAPP_URL}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Trouv">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M19.11 17.19c-.28-.14-1.64-.81-1.9-.9-.26-.09-.45-.14-.64.14-.19.28-.73.9-.9 1.09-.16.19-.33.21-.61.07-.28-.14-1.18-.43-2.25-1.39-.83-.74-1.39-1.66-1.55-1.94-.16-.28-.02-.43.12-.57.13-.13.28-.33.42-.49.14-.16.19-.28.28-.47.09-.19.05-.35-.02-.49-.07-.14-.64-1.54-.88-2.11-.23-.56-.47-.48-.64-.49h-.55c-.19 0-.49.07-.75.35-.26.28-.98.96-.98 2.35 0 1.39 1.01 2.74 1.15 2.93.14.19 1.98 3.03 4.79 4.25.67.29 1.19.46 1.6.59.67.21 1.28.18 1.76.11.54-.08 1.64-.67 1.87-1.31.23-.64.23-1.19.16-1.31-.07-.12-.26-.19-.54-.33z"/>
+            <path d="M16.02 3.2c-7.04 0-12.76 5.72-12.76 12.76 0 2.25.59 4.38 1.7 6.26L3.2 28.8l6.72-1.76c1.81.99 3.89 1.51 6.1 1.51 7.04 0 12.76-5.72 12.76-12.76S23.06 3.2 16.02 3.2zm0 22.97c-2.03 0-3.91-.58-5.52-1.58l-.4-.24-3.99 1.05 1.06-3.89-.26-.41c-1.07-1.67-1.64-3.61-1.64-5.6 0-5.8 4.72-10.52 10.52-10.52s10.52 4.72 10.52 10.52-4.72 10.52-10.52 10.52z"/>
+          </svg>
+          <span>WhatsApp</span>
+        </a>
       </div>
       <div class="trouv-chat-messages" id="trouv-messages"></div>
       <div class="trouv-chat-quick" id="trouv-quick"></div>
@@ -55,6 +80,7 @@
     `);
 
     document.body.appendChild(bubble);
+    document.body.appendChild(whatsapp);
     document.body.appendChild(panel);
 
     // Cache refs
@@ -158,7 +184,7 @@
 
     } catch (err) {
       typingEl.remove();
-      appendMessage('assistant', 'Sorry, something went wrong. Please try again or contact us directly at +44 203 835 5338.', msgsEl);
+      appendMessage('assistant', 'Sorry, something went wrong. Please try again, call +44 203 835 5338, or WhatsApp +44 7494 528909.', msgsEl);
       console.error('[Trouv chat]', err);
     } finally {
       isLoading = false;
