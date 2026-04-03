@@ -473,6 +473,23 @@ section {
   align-items: stretch;
 }
 
+.trust-signals--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.heathrow-pricing {
+  text-align: center;
+  font-size: 1.05rem;
+  line-height: 2;
+  color: var(--grey-600);
+  margin: 0 auto;
+  padding-bottom: clamp(8px, 2vw, 16px);
+}
+
+.heathrow-pricing p {
+  margin: 0;
+}
+
 .trust-signals--compact .trust-signals__item {
   padding: clamp(14px, 2vw, 20px) clamp(12px, 2vw, 20px);
   font-size: 0.68rem;
