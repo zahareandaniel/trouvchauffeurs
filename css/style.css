@@ -196,6 +196,28 @@ section {
   line-height: 1.8;
 }
 
+.section-heading p.airport-pricing-intro {
+  max-width: 38rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 0;
+  margin-top: -0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--grey-600);
+}
+
+.airport-page-split-lede p {
+  color: var(--grey-600);
+  font-size: 1rem;
+  line-height: 1.75;
+  margin-bottom: 1rem;
+}
+
+.split__content .airport-page-split-lede p:last-child {
+  margin-bottom: 1.25rem;
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
