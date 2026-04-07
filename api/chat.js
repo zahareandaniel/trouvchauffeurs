@@ -19,6 +19,14 @@ function corsHeaders(origin) {
   };
 }
 
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export default async function handler(req) {
   const origin = req.headers.get('origin') || '';
 
@@ -47,6 +55,10 @@ export default async function handler(req) {
     );
   }
 
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const toEmail = (process.env.CONTACT_TO_EMAIL || 'info@trouv.co.uk').trim();
+  const fromEmail = (process.env.CONTACT_FROM_EMAIL || '').trim();
+
   try {
     const { messages } = await req.json();
 
@@ -59,7 +71,6 @@ export default async function handler(req) {
 
     // ==========================================
     // ⬇️ PRICING FORMULA & SYSTEM PROMPT ⬇️
-    // You can modify the prices, distance formulas, and instructions here!
     // ==========================================
     const systemPrompt = `
 You are the official digital concierge for 'Trouv', a premium luxury chauffeur service based in Mayfair, London.
@@ -239,6 +250,15 @@ AI INSTRUCTIONS
 7. If vehicle clear → do NOT ask
 
 ---
+LEAD CAPTURE INSTRUCTIONS (CRITICAL)
+Your job is to act as a quoting bot AND a lead capturer.
+1. You must detect the user's intent (quote, booking, amendment, question).
+2. You must detect and extract: pickup, dropoff, date/time, passengers, luggage, vehicle preference, and flight/train number (if airport).
+3. If the user expresses intent to proceed with a booking or a quote (e.g., "arrange it", "yes", "book it"), you MUST politely ask for their Name and Email address (or Phone number) if you do not have it yet.
+4. Do NOT ask for contact info too early. Wait until they accept the quote or ask to book.
+5. ONCE you have BOTH the full journey details AND their contact details, you MUST trigger the 'submit_lead_to_team' tool to send the information.
+
+---
 WHATSAPP STYLE RULE
 Write naturally, not like a form
 Keep it concise and premium
@@ -267,6 +287,34 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
       })),
     ];
 
+    const tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'submit_lead_to_team',
+          description: 'Submit the final booking or quote request to the dispatch team once the user has provided their contact details and agreed to proceed.',
+          parameters: {
+            type: 'object',
+            properties: {
+              intent: { type: 'string', description: 'The detected intent: quote, booking, amendment, or question' },
+              name: { type: 'string', description: 'The name of the client' },
+              contact: { type: 'string', description: 'The email or phone number of the client' },
+              pickup: { type: 'string', description: 'The pickup location' },
+              dropoff: { type: 'string', description: 'The drop-off location' },
+              datetime: { type: 'string', description: 'The date and time of the journey' },
+              passengers: { type: 'string', description: 'Number of passengers' },
+              luggage: { type: 'string', description: 'Amount and type of luggage' },
+              vehicle: { type: 'string', description: 'The chosen vehicle (S-Class, V-Class, etc.)' },
+              flight_number: { type: 'string', description: 'Flight or train number, if applicable' },
+              price_quoted: { type: 'string', description: 'The exact price you quoted the client' },
+              message: { type: 'string', description: 'Any extra notes or special requests from the client' }
+            },
+            required: ['intent', 'name', 'contact', 'pickup', 'dropoff', 'datetime', 'passengers', 'vehicle', 'price_quoted']
+          }
+        }
+      }
+    ];
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -274,8 +322,10 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // using mini for lower latency and cost, switch to gpt-4o if needed
+        model: 'gpt-4o-mini',
         messages: openAiMessages,
+        tools: tools,
+        tool_choice: 'auto',
         temperature: 0.7,
         max_tokens: 400,
       }),
@@ -288,8 +338,71 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
     }
 
     const data = await response.json();
-    const replyText = data.choices[0].message.content;
+    const responseMessage = data.choices[0].message;
 
+    // Check if AI decided to submit the lead via our tool
+    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+      const toolCall = responseMessage.tool_calls[0];
+      
+      if (toolCall.function.name === 'submit_lead_to_team') {
+        const args = JSON.parse(toolCall.function.arguments);
+
+        // Ensure email delivery is configured
+        if (!resendApiKey || !fromEmail) {
+           return new Response(JSON.stringify({ 
+             reply: "Thank you for confirming. However, our email system is not currently configured, so I could not forward your request. Please email us directly at info@trouv.co.uk." 
+           }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
+        }
+
+        // Build HTML Email
+        const html = `<h2>New AI Chat Lead</h2>
+        <p><b>Intent:</b> ${esc(args.intent)}</p>
+        <p><b>Name:</b> ${esc(args.name)}</p>
+        <p><b>Contact Info:</b> ${esc(args.contact)}</p>
+        <hr/>
+        <p><b>Pickup:</b> ${esc(args.pickup)}</p>
+        <p><b>Drop-off:</b> ${esc(args.dropoff)}</p>
+        <p><b>Date/Time:</b> ${esc(args.datetime)}</p>
+        <p><b>Flight Number:</b> ${esc(args.flight_number || 'N/A')}</p>
+        <hr/>
+        <p><b>Vehicle:</b> ${esc(args.vehicle)}</p>
+        <p><b>Passengers:</b> ${esc(args.passengers)}</p>
+        <p><b>Luggage:</b> ${esc(args.luggage || 'N/A')}</p>
+        <p><b>Quoted Price:</b> ${esc(args.price_quoted)}</p>
+        <hr/>
+        <p><b>Extra Notes:</b> ${esc(args.message || 'None')}</p>`;
+
+        const resEmail = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [toEmail],
+            reply_to: args.contact.includes('@') ? args.contact : undefined,
+            subject: `Trouv AI Chat Lead - ${args.name}`,
+            html: html,
+          }),
+        });
+
+        if (!resEmail.ok) {
+          console.error("Resend delivery failed", await resEmail.text());
+          return new Response(JSON.stringify({ 
+            reply: "Your details have been collected, but there was an issue reaching our dispatch. Please email info@trouv.co.uk so we do not miss your request." 
+          }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
+        }
+
+        // Return success response to user
+        return new Response(JSON.stringify({ 
+          reply: "Excellent. I have collected all your details and securely forwarded them to our dispatch team. They will review your request and be in touch shortly to confirm your booking. Have a wonderful day!" 
+        }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
+      }
+    }
+
+    // Standard text response if no tool is called
+    const replyText = responseMessage.content;
     return new Response(JSON.stringify({ reply: replyText }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
