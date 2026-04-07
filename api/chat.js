@@ -233,7 +233,8 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
             properties: {
               intent: { type: 'string' },
               name: { type: 'string' },
-              contact: { type: 'string' },
+              email: { type: 'string', description: 'The email address of the client, strictly just the email string. Leave empty if none.' },
+              phone: { type: 'string', description: 'The phone number of the client. Leave empty if none.' },
               pickup: { type: 'string' },
               dropoff: { type: 'string' },
               datetime: { type: 'string' },
@@ -244,7 +245,7 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
               price_quoted: { type: 'string' },
               message: { type: 'string' }
             },
-            required: ['intent', 'name', 'contact', 'pickup', 'dropoff', 'datetime', 'passengers', 'vehicle', 'price_quoted']
+            required: ['intent', 'name', 'pickup', 'dropoff', 'datetime', 'passengers', 'vehicle', 'price_quoted']
           }
         }
       },
@@ -309,9 +310,13 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
               }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
             }
 
+            // Build conversation transcript
+            let conversationLog = messages.map(m => `<b>${m.role === 'user' ? 'Client' : 'Trouv AI'}:</b> ${esc(m.content)}`).join('<br/><br/>');
+
             const html = `<h2>New AI Chat Lead</h2>
             <p><b>Name:</b> ${esc(args.name)}</p>
-            <p><b>Contact Info:</b> ${esc(args.contact)}</p>
+            <p><b>Email:</b> ${esc(args.email || 'N/A')}</p>
+            <p><b>Phone:</b> ${esc(args.phone || 'N/A')}</p>
             <hr/>
             <p><b>Pickup:</b> ${esc(args.pickup)}</p>
             <p><b>Drop-off:</b> ${esc(args.dropoff)}</p>
@@ -323,7 +328,10 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
             <p><b>Luggage:</b> ${esc(args.luggage || 'N/A')}</p>
             <p><b>Quoted Price:</b> ${esc(args.price_quoted)}</p>
             <hr/>
-            <p><b>Extra Notes:</b> ${esc(args.message || 'None')}</p>`;
+            <p><b>Extra Notes:</b> ${esc(args.message || 'None')}</p>
+            <br/><hr/>
+            <h3>Full Conversation Transcript</h3>
+            <p style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">${conversationLog}</p>`;
 
             const resEmail = await fetch('https://api.resend.com/emails', {
               method: 'POST',
@@ -334,7 +342,7 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
               body: JSON.stringify({
                 from: fromEmail,
                 to: [toEmail],
-                reply_to: args.contact && args.contact.includes('@') ? args.contact : undefined,
+                reply_to: args.email && args.email.includes('@') ? args.email.trim() : undefined,
                 subject: `Trouv AI Chat Lead - ${args.name}`,
                 html: html,
               }),
