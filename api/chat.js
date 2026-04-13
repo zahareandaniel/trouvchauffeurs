@@ -27,6 +27,228 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ── Airport detection ──
+function detectAirport(location) {
+  const loc = (location || '').toLowerCase();
+  if (loc.includes('heathrow') || loc === 'lhr') return 'heathrow';
+  if (loc.includes('gatwick') || loc === 'lgw') return 'gatwick';
+  if (loc.includes('stansted') || loc === 'stn') return 'stansted';
+  if (loc.includes('luton') || loc === 'ltn') return 'luton';
+  if (loc.includes('london city') || loc.includes('city airport') || loc === 'lcy') return 'london_city';
+  return null;
+}
+
+// ── Extract postcode district from a full postcode or geocoded result ──
+function extractDistrict(postcode) {
+  const raw = (postcode || '').toUpperCase().trim().replace(/\s+/g, '');
+  if (raw.startsWith('E1W')) return 'E1W';
+  if (raw.startsWith('N1C')) return 'N1C';
+  const m = raw.match(/^([A-Z]{1,2}\d{1,2})/);
+  return m ? m[1] : raw;
+}
+
+// ── Heathrow postcode pricing (base prices BEFORE VAT) ──
+// S-Class / V-Class base. Range Rover = base + £45.
+const HEATHROW_POSTCODES = {
+  // Central London — £165
+  'W1': 165, 'W2': 165, 'W8': 165, 'W9': 165, 'W11': 165,
+  'SW1': 165, 'SW3': 165, 'SW7': 165, 'SW10': 165,
+  'WC1': 165, 'WC2': 165,
+  'EC1': 165, 'EC2': 165, 'EC3': 165, 'EC4': 165,
+  'SE1': 165,
+  // NW — £165
+  'NW1': 165, 'NW2': 165, 'NW3': 165, 'NW6': 165, 'NW8': 165, 'NW10': 165,
+  // NW — £170
+  'NW4': 170, 'NW5': 170, 'NW7': 170, 'NW9': 170, 'NW11': 170,
+  // W — £150
+  'W3': 150, 'W4': 150, 'W5': 150, 'W6': 150, 'W7': 150, 'W12': 150, 'W13': 150,
+  // N — £180
+  'N1': 180, 'N1C': 180, 'N2': 180, 'N5': 180, 'N6': 180, 'N7': 180, 'N19': 180,
+  // N — £185
+  'N8': 185, 'N10': 185, 'N15': 185, 'N16': 185,
+  // N — £190
+  'N3': 190, 'N9': 190, 'N11': 190, 'N12': 190, 'N14': 190,
+  'N17': 190, 'N18': 190, 'N21': 190, 'N22': 190,
+  // E — £175
+  'E1': 175, 'E1W': 175, 'E2': 175,
+  // E — £200
+  'E3': 200, 'E5': 200, 'E8': 200, 'E9': 200, 'E14': 200, 'E15': 200, 'E20': 200,
+  // E — £210
+  'E6': 210, 'E7': 210, 'E10': 210, 'E11': 210, 'E12': 210,
+  'E13': 210, 'E16': 210, 'E17': 210, 'E18': 210,
+  // SW — £165
+  'SW13': 165, 'SW14': 165, 'SW15': 165,
+  // SW — £170
+  'SW2': 170, 'SW4': 170, 'SW8': 170, 'SW9': 170, 'SW11': 170,
+  'SW12': 170, 'SW17': 170, 'SW18': 170, 'SW19': 170, 'SW20': 170,
+  // SW — £180
+  'SW16': 180,
+  // SE — £170
+  'SE11': 170,
+  // SE — £190
+  'SE5': 190, 'SE19': 190, 'SE21': 190, 'SE24': 190, 'SE25': 190, 'SE27': 190,
+  // SE — £200
+  'SE15': 200, 'SE16': 200, 'SE17': 200, 'SE22': 200,
+  // SE — £220
+  'SE3': 220, 'SE4': 220, 'SE6': 220, 'SE7': 220, 'SE8': 220,
+  'SE10': 220, 'SE12': 220, 'SE13': 220, 'SE14': 220, 'SE23': 220,
+  // SE — £230
+  'SE2': 230, 'SE9': 230, 'SE18': 230, 'SE28': 230,
+};
+
+// Prefix-based Heathrow prices
+const HEATHROW_PREFIXES = [
+  { prefix: 'TW', base: 145 },
+  { prefix: 'KT', base: 165 },
+  { prefix: 'UB', base: 130 },
+  { prefix: 'HA', base: 150 },
+];
+
+function getHeathrowBase(district) {
+  if (HEATHROW_POSTCODES[district] !== undefined) return HEATHROW_POSTCODES[district];
+  for (const { prefix, base } of HEATHROW_PREFIXES) {
+    if (district.startsWith(prefix)) return base;
+  }
+  return null;
+}
+
+// Other airports: Central London fixed prices (VAT already included)
+const OTHER_AIRPORT_FIXED = {
+  gatwick:     { s_class: 264, v_class: 264, range_rover: 360 },
+  stansted:    { s_class: 276, v_class: 276, range_rover: 360 },
+  luton:       { s_class: 276, v_class: 276, range_rover: 360 },
+  london_city: { s_class: 168, v_class: 168, range_rover: 216 },
+};
+
+const CENTRAL_LONDON = new Set([
+  'SW1','W1','WC1','WC2','EC1','EC2','EC3','EC4','SE1',
+  'SW3','SW7','W8','W2','SW10','W11','W9'
+]);
+
+// ── The single get_quote function — does EVERYTHING ──
+async function getQuote({ origin, destination, vehicle }, googleMapsKey) {
+  const result = { vehicle };
+
+  // 1. Detect airport
+  const originAirport = detectAirport(origin);
+  const destAirport = detectAirport(destination);
+  const airport = originAirport || destAirport;
+  const nonAirportLocation = originAirport ? destination : origin;
+
+  // 2. Get distance from Google Maps (both directions, use shortest)
+  let distanceMiles = null;
+  if (googleMapsKey) {
+    try {
+      const [resAB, resBA] = await Promise.all([
+        fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&key=${googleMapsKey}`),
+        fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=${encodeURIComponent(destination)}&destinations=${encodeURIComponent(origin)}&key=${googleMapsKey}`)
+      ]);
+      const [dataAB, dataBA] = await Promise.all([resAB.json(), resBA.json()]);
+
+      const elAB = dataAB.rows?.[0]?.elements?.[0];
+      const elBA = dataBA.rows?.[0]?.elements?.[0];
+
+      const distAB = elAB?.status === 'OK' ? elAB.distance.value : Infinity;
+      const distBA = elBA?.status === 'OK' ? elBA.distance.value : Infinity;
+
+      if (distAB !== Infinity || distBA !== Infinity) {
+        const shorterMetres = Math.min(distAB, distBA);
+        distanceMiles = parseFloat((shorterMetres / 1609.344).toFixed(1));
+        result.distance_miles = distanceMiles;
+      }
+    } catch (e) {
+      console.error('Google Maps distance failed:', e);
+    }
+  }
+
+  // 3. Geocode non-airport location to get postcode
+  let district = null;
+  if (googleMapsKey) {
+    try {
+      const geoRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(nonAirportLocation)}&components=country:GB&key=${googleMapsKey}`);
+      const geoData = await geoRes.json();
+      if (geoData.results && geoData.results.length > 0) {
+        const components = geoData.results[0].address_components || [];
+        const postcodeComp = components.find(c => c.types.includes('postal_code'));
+        if (postcodeComp) {
+          district = extractDistrict(postcodeComp.long_name);
+          result.postcode_district = district;
+        }
+      }
+    } catch (e) {
+      console.error('Geocoding failed:', e);
+    }
+  }
+
+  // 4. Calculate price
+  const hourlyRates = { s_class: 75, v_class: 75, range_rover: 100 };
+
+  if (airport === 'heathrow' && district) {
+    // ── HEATHROW with known postcode ──
+    const base = getHeathrowBase(district);
+    if (base !== null) {
+      // Fixed postcode pricing
+      const finalBase = vehicle === 'range_rover' ? base + 45 : base;
+      result.price = Math.round(finalBase * 1.2);
+      result.pricing_type = 'heathrow_postcode_fixed';
+      return result;
+    }
+    // Postcode not in table → fall through to distance pricing
+  }
+
+  if (airport === 'heathrow' && distanceMiles) {
+    // Heathrow distance pricing (postcode not in table or not geocoded)
+    const baseFare = 120;
+    const extraMiles = Math.max(0, distanceMiles - 5);
+    const perMileRate = vehicle === 'range_rover'
+      ? (distanceMiles > 50 ? 4.5 : 5.5)
+      : (distanceMiles > 50 ? 3.5 : 4);
+    result.price = Math.round((baseFare + extraMiles * perMileRate) * 1.2);
+    result.pricing_type = 'heathrow_distance';
+    return result;
+  }
+
+  if (airport && airport !== 'heathrow') {
+    // ── OTHER AIRPORTS ──
+    const isCentral = district ? CENTRAL_LONDON.has(district) : false;
+    if (isCentral && OTHER_AIRPORT_FIXED[airport]) {
+      result.price = OTHER_AIRPORT_FIXED[airport][vehicle];
+      result.pricing_type = 'airport_fixed';
+      return result;
+    }
+    if (distanceMiles) {
+      const baseFare = 120;
+      const extraMiles = Math.max(0, distanceMiles - 5);
+      const perMileRate = vehicle === 'range_rover'
+        ? (distanceMiles > 50 ? 4.5 : 5.5)
+        : (distanceMiles > 50 ? 3.5 : 4);
+      result.price = Math.round((baseFare + extraMiles * perMileRate) * 1.2);
+      result.pricing_type = 'airport_distance';
+      return result;
+    }
+  }
+
+  if (!airport && distanceMiles) {
+    // ── STANDARD DISTANCE (no airport) ──
+    const baseFare = vehicle === 'range_rover' ? 150 : 100;
+    const extraMiles = Math.max(0, distanceMiles - 10);
+    const perMileRate = vehicle === 'range_rover'
+      ? (distanceMiles > 50 ? 4.5 : 5.5)
+      : (distanceMiles > 50 ? 3.5 : 4);
+    result.price = Math.round((baseFare + extraMiles * perMileRate) * 1.2);
+    result.pricing_type = 'standard_distance';
+    return result;
+  }
+
+  // If we got here, something failed
+  result.error = 'Unable to calculate price. Distance or postcode could not be determined.';
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAIN HANDLER
+// ══════════════════════════════════════════════════════════════
+
 export default async function handler(req) {
   const origin = req.headers.get('origin') || '';
 
@@ -79,123 +301,40 @@ DATE HANDLING
 When a client states a date without a year, always assume the current year. Use today's date as reference: ${new Date().toDateString()}.
 
 ---
-TROUV CHAUFFEURS – PRICING & DISPATCH INSTRUCTIONS
----
-
 VEHICLE CAPACITY RULE
 Only recommend vehicles from this list. Never suggest any other vehicle:
-- Mercedes-Benz S-Class: up to 3 passengers
-- Mercedes-Benz V-Class: up to 6 passengers or extra luggage
-- Range Rover Autobiography: up to 3 passengers, VIP/premium requests
+- Mercedes-Benz S-Class (vehicle code: s_class): up to 3 passengers, up to 3 large suitcases
+- Mercedes-Benz V-Class (vehicle code: v_class): up to 6 passengers, up to 8 large suitcases
+- Range Rover Autobiography (vehicle code: range_rover): up to 3 passengers, up to 3 large suitcases, VIP/premium requests only
+
+CRITICAL VEHICLE LOGIC — ALWAYS USE THE SMALLEST SUITABLE VEHICLE
+DEFAULT is S-Class. Only upgrade to V-Class if passengers OR luggage EXCEED S-Class capacity.
+- Passengers ≤ 3 AND luggage ≤ 3 large items → MUST use S-Class (not V-Class)
+- Passengers > 3 OR luggage > 3 large items → MUST use V-Class
+- Range Rover is NEVER the default. Only use if explicitly requested by the client.
+Do NOT ask customer for vehicle preference unless both S-Class and Range Rover could apply.
 
 ---
-CRITICAL VEHICLE LOGIC
-If passengers exceed 3 → ALWAYS use Mercedes-Benz V-Class
-If luggage exceeds sedan capacity → ALWAYS use Mercedes-Benz V-Class
-If both passengers and luggage fit sedan → allow S-Class
-Range Rover is optional upgrade, not default
-Do NOT ask customer for vehicle if it can be determined
+PRICING — HOW TO QUOTE (CRITICAL)
+You MUST NOT do any maths or price calculations yourself.
+For EVERY journey, once you have the pickup location, drop-off location, and vehicle, call the 'get_quote' tool.
+The tool will return the exact final price including VAT.
+Simply quote the price returned by the tool to the client.
+
+If the tool returns an error, say: "I'm unable to calculate the exact price at this moment. Please contact us directly on +44 7494 528909 or via WhatsApp and we'll quote you immediately."
+
+RULES:
+- NEVER invent, estimate, or calculate a price yourself. Always use the tool.
+- NEVER show calculation steps or breakdowns to the client.
+- Quote the price as a single final number.
+- NEVER append "+ VAT" — all prices from the tool already include VAT.
 
 ---
-AIRPORT FIXED PRICES (Central London ONLY)
-Airport Fixed Prices MUST always be used when applicable.
-Never calculate distance pricing if a fixed price applies.
-IMPORTANT: Before quoting, identify the EXACT airport name first, then look up ONLY that airport's row below.
-
-| Airport              | S-Class | V-Class | Range Rover |
-|----------------------|---------|---------|-------------|
-| Heathrow             | £198    | £198    | £252        |
-| Gatwick              | £264    | £264    | £360        |
-| Stansted             | £276    | £276    | £360        |
-| Luton                | £276    | £276    | £360        |
-| London City Airport  | £168    | £168    | £216        |
-
-VERIFICATION: After selecting a price, confirm: (1) the airport name matches the row you used, (2) the vehicle matches the column you used. If either is wrong, correct before quoting.
+WAITING TIME
+If the client requests waiting time, note it in the booking details. Minimum hourly booking is 4 hours.
+Hourly rates: S-Class £90/hr, V-Class £90/hr, Range Rover £120/hr (all inclusive of VAT).
 
 ---
-CENTRAL LONDON DEFINITION
-Central London includes ONLY these postcode districts. No exceptions:
-SW1, W1, WC1, WC2, EC1, EC2, EC3, EC4, SE1, SW3, SW7, W8, W2, SW10, W11, W9, SE11, SW8, SW11, SW18
-If the destination postcode does NOT begin with one of the above → Airport Distance Pricing applies, never Fixed Pricing.
-
----
-AIRPORT DISTANCE PRICING (Non-Central London)
-Use this ONLY if: Journey involves an airport AND location is NOT Central London
-Minimum Charge: £120 + VAT (includes first 5 miles)
-
-Per-Mile Rates
-S-Class / V-Class: 5–50 miles → £4 per mile. 50+ miles → £3.5 per mile
-Range Rover: 5–50 miles → £5.5 per mile. 50+ miles → £4.5 per mile
-
-FORMULA (CRITICAL)
-Airport Distance Pricing: Final price = minimum charge + ((total miles - 5) × per-mile rate)
-
----
-STANDARD DISTANCE PRICING (No Airport)
-Use this ONLY if: Journey does NOT involve any airport
-
-Minimum Charge
-S-Class / V-Class → £100 + VAT
-Range Rover → £150 + VAT
-(includes first 10 miles)
-
-Per-Mile Rates
-S-Class / V-Class: 10–50 miles → £4 per mile. 50+ miles → £3.5 per mile
-Range Rover: 10–50 miles → £5.5 per mile. 50+ miles → £4.5 per mile
-
-FORMULA
-Standard Pricing: Final price = minimum charge + ((total miles - 10) × per-mile rate)
-
----
-HOURLY HIRE & WAITING TIME
-Minimum hourly booking: 4 hours
-
-Hourly Rates:
-S-Class → £75 + VAT/hour
-V-Class → £75 + VAT/hour
-Range Rover → £100 + VAT/hour
-
-WAITING TIME RULE (CRITICAL):
-If a client requests waiting time in addition to an A to B journey (e.g., waiting at an airport, or going to a meeting, having the car wait, then continuing), you MUST add the cost of the waiting time to the base journey price.
-Waiting time cost = (Hours of waiting) * (Hourly rate of the selected vehicle).
-Example: S-Class Heathrow to Central London (£198) + 3 hours waiting (£225 + VAT) = total quoted inclusive of VAT.
-
----
-DISTANCE CALCULATION RULE (CRITICAL)
-You MUST call the 'get_driving_distance' tool for EVERY journey that requires distance pricing.
-This includes ALL non-central London airport journeys and ALL standard point-to-point journeys.
-NEVER estimate, assume, or use internal knowledge for distances. No exceptions.
-If the tool fails or returns no result, respond with: "I'm unable to calculate the exact price at this moment. Please contact us directly on +44 7494 528909 or via WhatsApp and we'll quote you immediately."
-Do NOT guess a price if the tool fails.
-
----
-ROUNDING RULE
-Always round final price to nearest whole pound. Never show decimals.
-
----
-PRICING SELECTION LOGIC (VERY IMPORTANT)
-1. Check if journey involves an airport
-2. If YES → check if location is Central London
-→ YES → use Fixed Pricing
-→ NO → use Airport Distance Pricing
-3. If NO airport → use Standard Distance Pricing
-
----
-VAT RULES (CRITICAL)
-ALL fixed airport prices in this prompt are FINAL prices with VAT already included. Do NOT apply any further VAT calculation to fixed prices.
-For distance-calculated prices ONLY, multiply the final calculated base price by 1.2 to get the VAT-inclusive total.
-NEVER quote the base price as the final price.
-NEVER show VAT as a separate line item.
-ALWAYS quote one single final number with VAT already included.
-Example (fixed price): S-Class Heathrow = £198 (VAT already included, quote as-is). Example (distance): Base £120 + £92 = £212 → Quote £254 (multiply by 1.2).
-
----
-FINAL RULES
-Always follow vehicle capacity rules
-Never mix pricing models
-Never override fixed pricing
-Always calculate the VAT at 20% on top of the base price, and quote the final all-inclusive price with the 20% VAT included. Never append "+ VAT" to any quoted figure.
-
 LEAD CAPTURE INSTRUCTIONS (CRITICAL)
 Your job is to act as a quoting bot AND a lead capturer.
 1. Detect and extract: pickup, dropoff, date/time, passengers, luggage, vehicle preference, flight/train number (if airport).
@@ -205,20 +344,14 @@ Your job is to act as a quoting bot AND a lead capturer.
 4. ONCE you have BOTH the full journey details AND ALL their contact details (Name, Email, AND Phone), you MUST trigger the 'submit_lead_to_team' tool.
 
 ---
-WHATSAPP STYLE RULE
-Write naturally, not like a form.
-Keep it concise and premium.
-NEVER show the calculation steps or breakdown. ONLY provide the final calculated price.
-NEVER explicitly mention the names of our pricing policies (e.g., do not say "I am using Standard Distance Pricing"). Just seamlessly provide the quote.
+STYLE RULES
+Write naturally, not like a form. Keep it concise and premium.
+NEVER show calculation steps, breakdowns, or policy names.
+NEVER append "+ VAT" — all prices from the tool already include VAT.
 
----
 FORMAT
-Pickup to Drop-off on date at time in a vehicle for X passengers with X luggage — the rate is £X. Let me know if you'd like me to arrange it.
-
----
-CRITICAL SYSTEM NOTE (FOR AI INTEGRATION)
-Price must be calculated externally when possible. AI must NOT invent pricing.
-CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
+Pickup to Drop-off on date at time in a vehicle for X passengers with X luggage — the rate is £X.
+Would you like me to arrange this for you?
 `;
 
     let currentMessages = [
@@ -259,15 +392,20 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
       {
         type: 'function',
         function: {
-          name: 'get_driving_distance',
-          description: 'Get the exact driving distance in miles between two locations. Use this before calculating any quote that relies on distance based pricing.',
+          name: 'get_quote',
+          description: 'Get the exact price for a chauffeur journey. Pass the pickup and drop-off locations exactly as provided by the client, plus the vehicle code. The tool handles distance calculation, postcode lookup, and pricing automatically. Returns the final VAT-inclusive price.',
           parameters: {
             type: 'object',
             properties: {
-              origin: { type: 'string', description: 'The pickup location address or city' },
-              destination: { type: 'string', description: 'The drop-off location address or city' }
+              origin: { type: 'string', description: 'The exact pickup location as provided by the client (e.g. "N22 5HG", "Heathrow Terminal 3", "The Savoy Hotel")' },
+              destination: { type: 'string', description: 'The exact drop-off location as provided by the client' },
+              vehicle: {
+                type: 'string',
+                enum: ['s_class', 'v_class', 'range_rover'],
+                description: 'The vehicle code: s_class, v_class, or range_rover'
+              }
             },
-            required: ['origin', 'destination']
+            required: ['origin', 'destination', 'vehicle']
           }
         }
       }
@@ -284,7 +422,7 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           messages: currentMessages,
           tools: tools,
           tool_choice: 'auto',
@@ -366,45 +504,30 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
               reply: `Thank you, ${args.name}. Your booking request has been received. Our team will confirm to ${args.email} within 15 minutes. For urgent queries call or WhatsApp +44 7494 528909.` 
             }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
 
-          } else if (toolCall.function.name === 'get_driving_distance') {
-            const args = JSON.parse(toolCall.function.arguments);
-            let distanceResult = "Error: Distance calculation failed.";
-
-            if (googleMapsKey) {
-              try {
-                const mapsUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=${encodeURIComponent(args.origin)}&destinations=${encodeURIComponent(args.destination)}&key=${googleMapsKey}`;
-                const mapsRes = await fetch(mapsUrl);
-                const mapsData = await mapsRes.json();
-                
-                if (mapsData.rows && mapsData.rows[0].elements && mapsData.rows[0].elements[0].status === 'OK') {
-                  distanceResult = mapsData.rows[0].elements[0].distance.text; // e.g. "45.2 mi"
-                } else {
-                  console.error("Google Maps API returned non-OK status or missing data:", JSON.stringify(mapsData));
-                  distanceResult = "Error: Could not find driving distance.";
-                }
-              } catch (e) {
-                console.error("Fetch to Google Maps API failed:", e);
-                distanceResult = "Error: Network request failed.";
-              }
-            } else {
-              distanceResult = "Error: GOOGLE_MAPS_API_KEY is not configured on the server.";
+          } else if (toolCall.function.name === 'get_quote') {
+            let quoteResult;
+            try {
+              const args = JSON.parse(toolCall.function.arguments);
+              quoteResult = await getQuote(args, googleMapsKey);
+            } catch (e) {
+              console.error('get_quote error:', e);
+              quoteResult = { error: 'Price calculation failed.' };
             }
 
             currentMessages.push({
               role: 'tool',
               tool_call_id: toolCall.id,
               name: toolCall.function.name,
-              content: JSON.stringify({ exact_driving_distance: distanceResult })
+              content: JSON.stringify(quoteResult)
             });
 
-            // Need to process next tool or loop again
             allToolsExecuted = false;
           }
         }
         
         if (!allToolsExecuted) {
           maxCalls--;
-          continue; // Loop again and let OpenAI generate a response based on the tool result
+          continue;
         }
 
       } else {
@@ -415,7 +538,7 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
     }
 
     if (!finalResponseText) {
-      finalResponseText = "I apologize, but I encountered an error calculating the distance. Please email us at info@trouv.co.uk.";
+      finalResponseText = "I apologize, but I encountered an issue processing your request. Please email us at info@trouv.co.uk or call +44 7494 528909.";
     }
 
     return new Response(JSON.stringify({ reply: finalResponseText }), {
