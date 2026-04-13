@@ -100,31 +100,17 @@ Do NOT ask customer for vehicle if it can be determined
 AIRPORT FIXED PRICES (Central London ONLY)
 Airport Fixed Prices MUST always be used when applicable.
 Never calculate distance pricing if a fixed price applies.
+IMPORTANT: Before quoting, identify the EXACT airport name first, then look up ONLY that airport's row below.
 
-Heathrow
-S-Class → £198
-V-Class → £198
-Range Rover → £252
+| Airport              | S-Class | V-Class | Range Rover |
+|----------------------|---------|---------|-------------|
+| Heathrow             | £198    | £198    | £252        |
+| Gatwick              | £264    | £264    | £360        |
+| Stansted             | £276    | £276    | £360        |
+| Luton                | £276    | £276    | £360        |
+| London City Airport  | £168    | £168    | £216        |
 
-Gatwick
-S-Class → £264
-V-Class → £264
-Range Rover → £360
-
-Stansted
-S-Class → £276
-V-Class → £276
-Range Rover → £360
-
-Luton
-S-Class → £276
-V-Class → £276
-Range Rover → £360
-
-London City Airport
-S-Class → £168
-V-Class → £168
-Range Rover → £216
+VERIFICATION: After selecting a price, confirm: (1) the airport name matches the row you used, (2) the vehicle matches the column you used. If either is wrong, correct before quoting.
 
 ---
 CENTRAL LONDON DEFINITION
@@ -298,7 +284,7 @@ CRITICAL: Do NOT show the client the math formula (e.g., £X + (Y miles * £Z)).
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           messages: currentMessages,
           tools: tools,
           tool_choice: 'auto',
