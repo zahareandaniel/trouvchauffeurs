@@ -83,18 +83,16 @@ TROUV CHAUFFEURS – PRICING & DISPATCH INSTRUCTIONS
 ---
 
 VEHICLE CAPACITY RULE
-Passenger and luggage capacity must always be respected.
-
-Mercedes-Benz E-Class: 1–3 passengers. Up to 2 large suitcases and 2 small
-Mercedes-Benz S-Class: 1–3 passengers. Up to 2 large suitcases and 2 small
-Mercedes-Benz V-Class: 4–7 passengers. Up to 6 large suitcases and 3 small
-Range Rover Autobiography: 1–3 passengers. Up to 3 large suitcases and 1 small
+Only recommend vehicles from this list. Never suggest any other vehicle:
+- Mercedes-Benz S-Class: up to 3 passengers
+- Mercedes-Benz V-Class: up to 6 passengers or extra luggage
+- Range Rover Autobiography: up to 3 passengers, VIP/premium requests
 
 ---
 CRITICAL VEHICLE LOGIC
 If passengers exceed 3 → ALWAYS use Mercedes-Benz V-Class
 If luggage exceeds sedan capacity → ALWAYS use Mercedes-Benz V-Class
-If both passengers and luggage fit sedan → allow E-Class or S-Class
+If both passengers and luggage fit sedan → allow S-Class
 Range Rover is optional upgrade, not default
 Do NOT ask customer for vehicle if it can be determined
 
@@ -104,31 +102,26 @@ Airport Fixed Prices MUST always be used when applicable.
 Never calculate distance pricing if a fixed price applies.
 
 Heathrow
-E-Class → £110 + VAT
 S-Class → £165 + VAT
 V-Class → £165 + VAT
 Range Rover → £210 + VAT
 
 Gatwick
-E-Class → £155 + VAT
 S-Class → £220 + VAT
 V-Class → £220 + VAT
 Range Rover → £300 + VAT
 
 Stansted
-E-Class → £155 + VAT
 S-Class → £230 + VAT
 V-Class → £230 + VAT
 Range Rover → £300 + VAT
 
 Luton
-E-Class → £155 + VAT
 S-Class → £230 + VAT
 V-Class → £230 + VAT
 Range Rover → £300 + VAT
 
 London City Airport
-E-Class → £100 + VAT
 S-Class → £140 + VAT
 V-Class → £140 + VAT
 Range Rover → £180 + VAT
@@ -145,7 +138,6 @@ Use this ONLY if: Journey involves an airport AND location is NOT Central London
 Minimum Charge: £120 + VAT (includes first 5 miles)
 
 Per-Mile Rates
-E-Class: 5–50 miles → £3 per mile. 50+ miles → £2.5 per mile
 S-Class / V-Class: 5–50 miles → £4 per mile. 50+ miles → £3.5 per mile
 Range Rover: 5–50 miles → £5.5 per mile. 50+ miles → £4.5 per mile
 
@@ -157,13 +149,11 @@ STANDARD DISTANCE PRICING (No Airport)
 Use this ONLY if: Journey does NOT involve any airport
 
 Minimum Charge
-E-Class → £75 + VAT
 S-Class / V-Class → £100 + VAT
 Range Rover → £150 + VAT
 (includes first 10 miles)
 
 Per-Mile Rates
-E-Class: 10–50 miles → £3 per mile. 50+ miles → £2.5 per mile
 S-Class / V-Class: 10–50 miles → £4 per mile. 50+ miles → £3.5 per mile
 Range Rover: 10–50 miles → £5.5 per mile. 50+ miles → £4.5 per mile
 
@@ -175,7 +165,6 @@ HOURLY HIRE & WAITING TIME
 Minimum hourly booking: 4 hours
 
 Hourly Rates:
-E-Class → £50 + VAT/hour
 S-Class → £75 + VAT/hour
 V-Class → £75 + VAT/hour
 Range Rover → £100 + VAT/hour
