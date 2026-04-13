@@ -128,9 +128,9 @@ Range Rover → £180 + VAT
 
 ---
 CENTRAL LONDON DEFINITION
-Central London includes (but not limited to):
-SW1, W1, WC1, WC2, EC1, EC2, EC3, EC4, SE1, SW3, SW7, W8, W2, SW10, W11, W9, SE1,SE11,SW8,SW11,SW18
-If pickup OR drop-off is within these → Fixed Pricing applies
+Central London includes ONLY these postcode districts. No exceptions:
+SW1, W1, WC1, WC2, EC1, EC2, EC3, EC4, SE1, SW3, SW7, W8, W2, SW10, W11, W9, SE11, SW8, SW11, SW18
+If the destination postcode does NOT begin with one of the above → Airport Distance Pricing applies, never Fixed Pricing.
 
 ---
 AIRPORT DISTANCE PRICING (Non-Central London)
