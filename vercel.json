@@ -7,8 +7,8 @@
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "trouv.co.uk" }],
-      "destination": "https://www.trouv.co.uk/$1",
+      "has": [{ "type": "host", "value": "trouvchauffeurs.co.uk" }],
+      "destination": "https://www.trouvchauffeurs.co.uk/$1",
       "permanent": true
     }
   ],

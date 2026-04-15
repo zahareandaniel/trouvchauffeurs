@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (res.status === 503) {
           showStatusError(
-            'This quote form is not connected to email yet. Please use info@trouv.co.uk or call +44 203 835 5338 while we finish setup.'
+            'This quote form is not connected to email yet. Please use info@trouvchauffeurs.co.uk or call +44 203 835 5338 while we finish setup.'
           );
           return;
         }
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok || data.success !== true) {
           const msg =
             (data && data.error) ||
-            'Could not send your message. Please try again or email info@trouv.co.uk.';
+            'Could not send your message. Please try again or email info@trouvchauffeurs.co.uk.';
           throw new Error(msg);
         }
 
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg =
           err && err.message
             ? err.message
-            : 'Something went wrong. Please email info@trouv.co.uk.';
+            : 'Something went wrong. Please email info@trouvchauffeurs.co.uk.';
         showStatusError(msg);
       } finally {
         sending = false;
@@ -225,10 +225,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ---------- Active Navigation ----------
-  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.nav-links a, .mobile-nav a').forEach(link => {
+  const currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
+  document.querySelectorAll('.nav-links a, .mobile-nav a').forEach((link) => {
     const href = link.getAttribute('href');
-    if (href === currentPage || (currentPage === '' && href === 'index.html')) {
+    if (!href || href.startsWith('#')) return;
+
+    const linkPath = new URL(href, window.location.origin).pathname.replace(/\/+$/, '') || '/';
+    if (linkPath === currentPath) {
       link.classList.add('active');
     }
   });
@@ -391,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch (error) {
         removeLoading();
-        appendMessage('An error occurred while connecting. Please use info@trouv.co.uk.', 'bot');
+        appendMessage('An error occurred while connecting. Please use info@trouvchauffeurs.co.uk.', 'bot');
       }
     });
   }

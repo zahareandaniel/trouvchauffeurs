@@ -278,7 +278,7 @@ export default async function handler(req) {
   }
 
   const resendApiKey = process.env.RESEND_API_KEY;
-  const toEmail = (process.env.CONTACT_TO_EMAIL || 'info@trouv.co.uk').trim();
+  const toEmail = (process.env.CONTACT_TO_EMAIL || 'info@trouvchauffeurs.co.uk').trim();
   const fromEmail = (process.env.CONTACT_FROM_EMAIL || '').trim();
   const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -451,7 +451,7 @@ Would you like me to arrange this for you?
 
             if (!resendApiKey || !fromEmail) {
               return new Response(JSON.stringify({ 
-                reply: "Thank you for confirming. However, our email system is not currently configured, so I could not forward your request. Please email us directly at info@trouv.co.uk." 
+                reply: "Thank you for confirming. However, our email system is not currently configured, so I could not forward your request. Please email us directly at info@trouvchauffeurs.co.uk." 
               }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
             }
 
@@ -496,7 +496,7 @@ Would you like me to arrange this for you?
             if (!resEmail.ok) {
               console.error("Resend delivery failed", await resEmail.text());
               return new Response(JSON.stringify({ 
-                reply: "Your details have been collected, but there was an issue reaching our dispatch. Please email info@trouv.co.uk so we do not miss your request." 
+                reply: "Your details have been collected, but there was an issue reaching our dispatch. Please email info@trouvchauffeurs.co.uk so we do not miss your request." 
               }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
             }
 
@@ -538,7 +538,7 @@ Would you like me to arrange this for you?
     }
 
     if (!finalResponseText) {
-      finalResponseText = "I apologize, but I encountered an issue processing your request. Please email us at info@trouv.co.uk or call +44 7494 528909.";
+      finalResponseText = "I apologize, but I encountered an issue processing your request. Please email us at info@trouvchauffeurs.co.uk or call +44 7494 528909.";
     }
 
     return new Response(JSON.stringify({ reply: finalResponseText }), {
@@ -550,7 +550,7 @@ Would you like me to arrange this for you?
     console.error('Chat API Error:', error);
     return new Response(
       JSON.stringify({
-        error: 'We are currently unable to connect to our quoting system. Please email info@trouv.co.uk.',
+        error: 'We are currently unable to connect to our quoting system. Please email info@trouvchauffeurs.co.uk.',
       }),
       {
         status: 500,

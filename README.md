@@ -73,7 +73,7 @@ After deploy, clear CDN or browser cache if updates do not appear immediately.
 
 ## Contact (operational)
 
-- **Email:** [info@trouv.co.uk](mailto:info@trouv.co.uk)  
+- **Email:** [info@trouvchauffeurs.co.uk](mailto:info@trouvchauffeurs.co.uk)  
 - **Phone:** [+44 20 3835 5338](tel:+442038355338) (dialled as +44 203 835 5338)  
 - **Address:** 45 Albemarle Street, Mayfair, London, W1S 4JL  
 

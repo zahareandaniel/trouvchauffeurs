@@ -41,7 +41,7 @@ export default async function handler(req) {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const to = (process.env.CONTACT_TO_EMAIL || 'info@trouv.co.uk').trim();
+  const to = (process.env.CONTACT_TO_EMAIL || 'info@trouvchauffeurs.co.uk').trim();
   const from = (process.env.CONTACT_FROM_EMAIL || '').trim();
 
   if (!apiKey || !from) {
@@ -125,7 +125,7 @@ export default async function handler(req) {
     const detail = await res.text();
     return new Response(
       JSON.stringify({
-        error: 'Could not send email. Please try again or contact info@trouv.co.uk.',
+        error: 'Could not send email. Please try again or contact info@trouvchauffeurs.co.uk.',
         detail: detail.slice(0, 400),
       }),
       {
