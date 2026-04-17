@@ -2202,6 +2202,21 @@ section {
   opacity: 0.7;
 }
 
+.article-post__hero {
+  width: 100%;
+  margin: 1.5rem 0 2.5rem;
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 16 / 7;
+}
+
+.article-post__hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 /* ---------- FAQ accordion ---------- */
 .faq-accordion {
   max-width: 720px;
